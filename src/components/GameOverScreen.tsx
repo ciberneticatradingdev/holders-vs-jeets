@@ -29,7 +29,7 @@ export function GameOverScreen() {
         </div>
       ) : (<p style={{ color: '#4ade80', fontSize: 12, marginBottom: 16 }}>✓ Score saved to leaderboard!</p>)}
       <div style={{ display: 'flex', gap: 12 }}>
-        <button onClick={startGame} style={btn('#22c55e', '#16a34a')}>RETRY</button>
+        <button onClick={() => startGame()} style={btn('#22c55e', '#16a34a')}>RETRY</button>
         <button onClick={() => setPhase('leaderboard')} style={btn('#fbbf24', '#f59e0b')}>LEADERBOARD</button>
         <button onClick={() => setPhase('landing')} style={btn('#64748b', '#475569')}>MENU</button>
       </div>

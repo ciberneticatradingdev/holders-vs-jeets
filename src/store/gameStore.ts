@@ -10,12 +10,14 @@ interface GameStore {
   tendies: number
   combo: number
   tick: number
+  currentLevel: number
   init: () => void
   reset: () => void
   setPhase: (p: GamePhase) => void
-  startGame: () => void
+  startGame: (level?: number) => void
   saveScore: (name: string) => void
   forceUpdate: () => void
+  setLevel: (level: number) => void
 }
 
 let engineInstance: GameEngine | null = null
@@ -28,6 +30,7 @@ export const useGame = create<GameStore>((set, get) => ({
   tendies: 0,
   combo: 0,
   tick: 0,
+  currentLevel: 1,
   init: () => {
     if (!engineInstance) {
       engineInstance = new GameEngine()
@@ -51,12 +54,16 @@ export const useGame = create<GameStore>((set, get) => ({
     set({ phase: 'playing', score: 0, wave: 0, tendies: 150, combo: 0, tick: get().tick + 1 })
   },
   setPhase: (p: GamePhase) => set({ phase: p }),
-  startGame: () => {
+  startGame: (level?: number) => {
     engineInstance?.reset()
+    if (level) {
+      set({ currentLevel: level })
+    }
     set({ phase: 'playing', tick: get().tick + 1 })
   },
   saveScore: (name: string) => {
     engineInstance?.saveScore(name)
   },
   forceUpdate: () => set({ tick: get().tick + 1 }),
+  setLevel: (level: number) => set({ currentLevel: level }),
 }))

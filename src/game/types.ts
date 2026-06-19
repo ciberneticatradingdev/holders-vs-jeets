@@ -2,7 +2,7 @@
 // Holders vs Jeets — Type Definitions
 // ============================================================
 
-export type GamePhase = 'landing' | 'playing' | 'paused' | 'gameover' | 'victory' | 'leaderboard' | 'howto'
+export type GamePhase = 'landing' | 'playing' | 'paused' | 'gameover' | 'victory' | 'leaderboard' | 'howto' | 'levelselect' | 'missions' | 'tutorial'
 
 export type HolderType =
   | 'staking_pool' | 'dca_bot' | 'diamond_hands' | 'ape_sniper'
