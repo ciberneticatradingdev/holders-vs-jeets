@@ -184,10 +184,39 @@ html, body {
   flex-direction: column;
   gap: 16px;
   pointer-events: auto;
+  z-index: 1;
 }
 
 .screen-overlay.active {
   display: flex;
+}
+
+/* Landing background image on menu screen */
+.menu-overlay {
+  background: url('/bg-landing.jpg') center center / cover no-repeat;
+}
+
+.menu-overlay::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.62);
+  z-index: 0;
+}
+
+.menu-overlay > * {
+  position: relative;
+  z-index: 1;
+}
+
+.menu-overlay .title {
+  color: #4ade80;
+  text-shadow: 0 0 24px rgba(0, 0, 0, 0.85), 0 3px 0 #0f1a13;
+}
+
+.menu-overlay .subtitle {
+  color: #d1fae5;
+  text-shadow: 0 0 12px rgba(0, 0, 0, 0.8);
 }
 
 .btn {
