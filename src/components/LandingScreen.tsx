@@ -1,12 +1,19 @@
+import { useEffect } from 'react'
 import { useGame } from '../store/gameStore'
 import { useGameSession } from '../hooks/useGameSession'
 import { NFT_HOLDERS, RARITY_COLORS, RARITY_GLOW, FREE_HOLDERS } from '../game/nftSystem'
 import { LEVELS } from '../game/levels'
 import type { HolderType } from '../game/types'
+import { gameAudio } from '../audio/music'
 
 export function LandingScreen() {
   const { startGame, setPhase } = useGame()
   const session = useGameSession()
+
+  useEffect(() => {
+    gameAudio.startMusic('menu')
+    return () => {} // keep menu music playing
+  }, [])
 
   return (
     <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-start', background: 'radial-gradient(ellipse at 50% 0%, #0f2a1a 0%, #0a0e0a 60%)', color: '#fff', fontFamily: 'monospace', overflow: 'auto' }}>

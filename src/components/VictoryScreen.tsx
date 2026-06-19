@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { gameAudio } from '../audio/music'
 import { useGame } from '../store/gameStore'
 import { TOTAL_WAVES } from '../game/config'
 
@@ -8,6 +9,7 @@ export function VictoryScreen() {
   const [saved, setSaved] = useState(false)
   const stats = engine?.stats
 
+  useEffect(() => { gameAudio.startMusic('victory'); return () => {} }, [])
   const handleSave = () => { if (name.trim() && !saved) { engine?.saveScore(name.trim()); setSaved(true) } }
 
   return (

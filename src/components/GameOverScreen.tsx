@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { gameAudio } from '../audio/music'
+import { useState, useEffect } from 'react'
 import { useGame } from '../store/gameStore'
 
 export function GameOverScreen() {
@@ -7,6 +8,7 @@ export function GameOverScreen() {
   const [saved, setSaved] = useState(false)
   const stats = engine?.stats
 
+  useEffect(() => { gameAudio.startMusic('gameover'); return () => {} }, [])
   const handleSave = () => { if (name.trim() && !saved) { engine?.saveScore(name.trim()); setSaved(true) } }
 
   return (

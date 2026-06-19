@@ -41,6 +41,7 @@ export class GameEngine {
   onVictory: (() => void) | null = null
   onWaveChange: ((wave: number) => void) | null = null
   onStateChange: (() => void) | null = null
+  onSfx: ((type: string) => void) | null = null
   leaderboard: LeaderboardEntry[] = []
   mouseX = 0; mouseY = 0
   hoverRow = -1; hoverCol = -1
@@ -124,6 +125,7 @@ export class GameEngine {
     this.selectedHolder = null
     this.stats.holdersPlaced++
     this.spawnParticles(GRID_OFFSET_X + col * CELL_W + CELL_W / 2, GRID_OFFSET_Y + row * CELL_H + CELL_H / 2, 8, 'sparkle', def.color)
+    this.onSfx?.('place')
     this.onStateChange?.()
   }
 
@@ -131,6 +133,7 @@ export class GameEngine {
     this.tendies += t.value; this.stats.tendiesCollected += t.value
     this.spawnParticles(t.x, t.y, 6, 'collect', '#fbbf24')
     this.tendieCoins = this.tendieCoins.filter(x => x.id !== t.id)
+    this.onSfx?.('collect')
     this.onStateChange?.()
   }
 
@@ -143,7 +146,7 @@ export class GameEngine {
     if (this.currentWaveIndex >= this.waves.length) return
     this.waveActive = true; this.waveTimer = 0; this.waveSpawnIndex = 0
     this.stats.wave = this.waves[this.currentWaveIndex].number
-    this.onWaveChange?.(this.stats.wave); this.onStateChange?.()
+    this.onWaveChange?.(this.stats.wave); this.onSfx?.('wave_start'); this.onStateChange?.()
   }
 
   spawnJeet(type: JeetType, row: number) {
@@ -169,6 +172,7 @@ export class GameEngine {
   }
 
   fireProjectile(h: Holder, def: typeof HOLDER_DEFS[HolderType]) {
+    this.onSfx?.('shoot')
     const cx = GRID_OFFSET_X + h.col * CELL_W + CELL_W / 2 + 10
     const cy = GRID_OFFSET_Y + h.row * CELL_H + CELL_H / 2
     if (h.type === 'pump_squad' && def.lanes === 3) {
@@ -204,6 +208,7 @@ export class GameEngine {
       if (this.stats.combo > 1) points = Math.floor(points * (1 + this.stats.combo * 0.1))
       this.stats.score += points
       this.spawnParticles(j.x, GRID_OFFSET_Y + j.row * CELL_H + CELL_H / 2, 10, 'death', def.color)
+      this.onSfx?.('jeet_death')
     }
   }
 
@@ -306,6 +311,7 @@ export class GameEngine {
           const cx = GRID_OFFSET_X + h.col * CELL_W + CELL_W / 2
           const cy = GRID_OFFSET_Y + h.row * CELL_H + CELL_H / 2
           this.spawnExplosion(cx, cy)
+          this.onSfx?.('explosion')
           const radius = def.explosionRadius! * CELL_W
           for (const j of this.jeets) {
             const dx = j.x - cx; const dy = (GRID_OFFSET_Y + j.row * CELL_H + CELL_H / 2) - cy
