@@ -178,7 +178,49 @@ function toLogical(clientX: number, clientY: number): { x: number; y: number } |
   return { x: x / scale, y: y / scale };
 }
 
-function renderHUD(state = store.getState()): void {
+const seedPackets: { el: HTMLDivElement; type: HolderType }[] = [];
+
+function createSeedBar(): void {
+  seedBar.innerHTML = '';
+  seedPackets.length = 0;
+  const seeds: HolderType[] = ['diamond_hands', 'whale', 'staker', 'ape', 'fud_bomber', 'hodl_laser'];
+  for (const type of seeds) {
+    const def = HOLDER_DEFS[type];
+    const packet = document.createElement('div');
+    packet.className = 'seed-packet';
+    packet.dataset.type = type;
+    packet.innerHTML = `
+      <div class="icon" style="background:${def.color};--packet-color:${def.color}"></div>
+      <div class="name">${def.name}</div>
+      <div class="cost">${def.cost}</div>
+    `;
+    seedPackets.push({ el: packet, type });
+    seedBar.appendChild(packet);
+  }
+  seedBar.addEventListener('click', (e) => {
+    const packet = (e.target as HTMLElement).closest('.seed-packet') as HTMLDivElement | null;
+    if (!packet) return;
+    const type = packet.dataset.type as HolderType;
+    const state = store.getState();
+    if (state.status !== 'playing') return;
+    if (state.liquidity < HOLDER_DEFS[type].cost || (state.seedCooldowns[type] ?? 0) > 0) return;
+    store.getState().selectSeed(type);
+  });
+}
+
+function selectSeedByKey(index: number) {
+  const seeds: HolderType[] = ['diamond_hands', 'whale', 'staker', 'ape', 'fud_bomber', 'hodl_laser'];
+  const type = seeds[index];
+  if (!type) return;
+  const state = store.getState();
+  if (state.status !== 'playing') return;
+  if (state.liquidity < HOLDER_DEFS[type].cost || (state.seedCooldowns[type] ?? 0) > 0) return;
+  store.getState().selectSeed(type);
+}
+
+function renderHUD(_state?: GameState): void {
+  const state = _state ?? store.getState();
+
   liquidityPanel.innerHTML = `Liquidity: <span class="value">${state.liquidity}</span>`;
   wavePanel.innerHTML = `Wave: <span class="value">${state.waveIndex + 1}/${waves.length}</span>`;
   livesPanel.innerHTML = `Lives: <span class="value">${state.lives}</span>`;
@@ -198,36 +240,23 @@ function renderHUD(state = store.getState()): void {
     submitIfWallet(state);
   }
 
-  seedBar.innerHTML = '';
-  const seeds: HolderType[] = ['diamond_hands', 'whale', 'staker', 'ape', 'fud_bomber', 'hodl_laser'];
-  for (const type of seeds) {
+  for (const { el, type } of seedPackets) {
     const def = HOLDER_DEFS[type];
-    const packet = document.createElement('div');
-    packet.className = 'seed-packet';
-    if (state.selectedSeed === type) packet.classList.add('active');
-    if (state.liquidity < def.cost || (state.seedCooldowns[type] ?? 0) > 0) {
-      packet.classList.add('disabled');
-    }
-    packet.innerHTML = `
-      <div class="icon" style="background:${def.color};--packet-color:${def.color}"></div>
-      <div class="name">${def.name}</div>
-      <div class="cost">${def.cost}</div>
-    `;
     const cd = state.seedCooldowns[type] ?? 0;
+    el.classList.toggle('active', state.selectedSeed === type);
+    el.classList.toggle('disabled', state.liquidity < def.cost || cd > 0);
+
+    let overlay = el.querySelector('.cooldown-overlay');
     if (cd > 0) {
-      const overlay = document.createElement('div');
-      overlay.className = 'cooldown-overlay';
+      if (!overlay) {
+        overlay = document.createElement('div');
+        overlay.className = 'cooldown-overlay';
+        el.appendChild(overlay);
+      }
       overlay.textContent = Math.ceil(cd / 1000).toString();
-      packet.appendChild(overlay);
+    } else if (overlay) {
+      overlay.remove();
     }
-    packet.addEventListener('click', () => {
-      if (state.status !== 'playing') return;
-      const current = store.getState();
-      if (current.liquidity < def.cost || (current.seedCooldowns[type] ?? 0) > 0) return;
-      store.getState().selectSeed(type);
-      renderHUD();
-    });
-    seedBar.appendChild(packet);
   }
 }
 
@@ -350,6 +379,13 @@ soundBtn.addEventListener('click', () => {
   soundBtn.textContent = enabled ? '🔊' : '🔇';
 });
 
+document.addEventListener('keydown', (e) => {
+  if (e.key >= '1' && e.key <= '6') {
+    selectSeedByKey(parseInt(e.key, 10) - 1);
+  }
+});
+
 renderWalletPanel();
+createSeedBar();
 renderHUD();
 requestAnimationFrame(gameLoop);
