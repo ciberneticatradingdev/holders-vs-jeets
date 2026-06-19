@@ -1,10 +1,28 @@
-import { createClient } from '@supabase/supabase-js'
+import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || 'https://vrgzzmwytowwtxpaapyt.supabase.co'
-const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || ''
+const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || 'placeholder_key_for_offline_mode'
 
-export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-  auth: { persistSession: false }
+let _supabase: SupabaseClient | null = null
+
+function getSupabase(): SupabaseClient {
+  if (!_supabase) {
+    try {
+      _supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+        auth: { persistSession: false }
+      })
+    } catch (e) {
+      console.warn('Supabase init failed, running in offline mode:', e)
+      _supabase = createClient('https://placeholder.supabase.co', 'placeholder', { auth: { persistSession: false } })
+    }
+  }
+  return _supabase
+}
+
+export const supabase = new Proxy({} as SupabaseClient, {
+  get(_, prop) {
+    return getSupabase()[prop as keyof SupabaseClient]
+  }
 })
 
 export interface Player {
