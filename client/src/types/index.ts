@@ -29,6 +29,7 @@ export interface Holder {
   hp: number;
   maxHp: number;
   cooldownMs: number;
+  flashMs: number;
 }
 
 export type JeetType = 'paper_hands' | 'fomo_runner' | 'rug_puller' | 'whale_jeet' | 'bot_swarm' | 'influencer';
@@ -54,6 +55,7 @@ export interface Jeet {
   maxHp: number;
   attackCooldownMs: number;
   isEating: boolean;
+  flashMs: number;
 }
 
 export interface Projectile {
@@ -75,6 +77,28 @@ export interface Resource {
   lifetimeMs: number;
 }
 
+export interface Particle {
+  id: string;
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  lifeMs: number;
+  maxLifeMs: number;
+  color: string;
+  size: number;
+}
+
+export interface FloatingText {
+  id: string;
+  x: number;
+  y: number;
+  text: string;
+  color: string;
+  lifeMs: number;
+  maxLifeMs: number;
+}
+
 export interface Wave {
   index: number;
   durationMs: number;
@@ -91,8 +115,13 @@ export interface GameState {
   jeets: Jeet[];
   projectiles: Projectile[];
   resources: Resource[];
+  particles: Particle[];
+  floatingTexts: FloatingText[];
   selectedSeed: HolderType | null;
   hoveredCell: { lane: number; col: number } | null;
   seedCooldowns: Partial<Record<HolderType, number>>;
   spawnedKeys: string[];
+  shakeMs: number;
+  waveBannerMs: number;
+  soundEnabled: boolean;
 }

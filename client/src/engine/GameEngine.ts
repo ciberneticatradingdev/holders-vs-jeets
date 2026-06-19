@@ -6,6 +6,7 @@ import type {
   Jeet,
   JeetDefinition,
   JeetType,
+  Particle,
   Projectile,
   Wave,
 } from '../types';
@@ -156,6 +157,9 @@ export const JEET_DEFS: Record<JeetType, JeetDefinition> = {
 let idCounter = 0;
 const uid = (prefix: string) => `${prefix}_${++idCounter}_${Date.now().toString(36)}`;
 
+const rnd = (min: number, max: number) => Math.random() * (max - min) + min;
+const rndInt = (min: number, max: number) => Math.floor(rnd(min, max));
+
 export function cellCenter(lane: number, col: number): { x: number; y: number } {
   return {
     x: GRID.offsetX + col * GRID.cellSize + GRID.cellSize / 2,
@@ -172,17 +176,25 @@ export function cellAtPixel(x: number, y: number): { lane: number; col: number }
 
 export function buildWaves(): Wave[] {
   const waves: Wave[] = [];
-  for (let i = 0; i < 5; i++) {
+  for (let i = 0; i < 8; i++) {
     const spawns: { timeMs: number; lane: number; type: JeetType }[] = [];
-    const count = 3 + i * 2;
+    const count = 4 + i * 2;
+    const available: JeetType[] = ['paper_hands'];
+    if (i >= 1) available.push('fomo_runner');
+    if (i >= 2) available.push('bot_swarm');
+    if (i >= 3) available.push('rug_puller');
+    if (i >= 5) available.push('influencer');
+    if (i >= 7) available.push('whale_jeet');
+
     for (let j = 0; j < count; j++) {
+      const type = available[Math.floor(Math.random() * available.length)];
       spawns.push({
-        timeMs: 2000 + j * 2500,
+        timeMs: 2000 + j * (2200 - i * 150),
         lane: Math.floor(Math.random() * GRID.lanes),
-        type: i < 2 ? 'paper_hands' : i < 3 ? 'fomo_runner' : i === 3 ? 'rug_puller' : 'whale_jeet',
+        type,
       });
     }
-    waves.push({ index: i, durationMs: 30000 + i * 5000, spawns });
+    waves.push({ index: i, durationMs: 30000 + i * 4000, spawns });
   }
   return waves;
 }
@@ -208,29 +220,42 @@ export function placeHolder(state: GameState, lane: number, col: number, type: H
     hp: def.hp,
     maxHp: def.hp,
     cooldownMs: 0,
+    flashMs: 0,
   };
 
-  return {
-    ...state,
-    liquidity: state.liquidity - def.cost,
-    holders: [...state.holders, holder],
-    selectedSeed: null,
-    seedCooldowns: { ...state.seedCooldowns, [type]: def.seedRechargeMs },
-  };
+  return addParticles(
+    {
+      ...state,
+      liquidity: state.liquidity - def.cost,
+      holders: [...state.holders, holder],
+      selectedSeed: null,
+      seedCooldowns: { ...state.seedCooldowns, [type]: def.seedRechargeMs },
+    },
+    pos.x,
+    pos.y,
+    def.color,
+    12,
+    'burst'
+  );
 }
 
 export function collectResource(state: GameState, id: string): GameState {
   const resource = state.resources.find((r) => r.id === id);
   if (!resource) return state;
-  return {
-    ...state,
-    liquidity: state.liquidity + resource.value,
-    resources: state.resources.filter((r) => r.id !== id),
-  };
+  return addFloatingText(
+    {
+      ...state,
+      liquidity: state.liquidity + resource.value,
+      resources: state.resources.filter((r) => r.id !== id),
+    },
+    resource.x,
+    resource.y,
+    `+${resource.value}`,
+    '#fcd34d'
+  );
 }
 
 function spawnJeet(type: JeetType, lane: number): Jeet {
-  const def = JEET_DEFS[type];
   const pos = cellCenter(lane, GRID.cols - 1);
   return {
     id: uid('jeet'),
@@ -238,10 +263,11 @@ function spawnJeet(type: JeetType, lane: number): Jeet {
     lane,
     x: pos.x + GRID.cellSize,
     y: pos.y,
-    hp: def.hp,
-    maxHp: def.hp,
+    hp: JEET_DEFS[type].hp,
+    maxHp: JEET_DEFS[type].hp,
     attackCooldownMs: 0,
     isEating: false,
+    flashMs: 0,
   };
 }
 
@@ -276,9 +302,19 @@ export function step(state: GameState, deltaMs: number, waves: Wave[]): GameStat
     seedCooldowns: Object.fromEntries(
       Object.entries(state.seedCooldowns).map(([k, v]) => [k, Math.max(0, v - deltaMs)])
     ) as Partial<Record<HolderType, number>>,
+    shakeMs: Math.max(0, state.shakeMs - deltaMs),
+    waveBannerMs: Math.max(0, state.waveBannerMs - deltaMs),
   };
 
-  // Wave progression
+  // Decrement flash timers
+  next.holders = next.holders.map((h) => ({ ...h, flashMs: Math.max(0, h.flashMs - deltaMs) }));
+  next.jeets = next.jeets.map((j) => ({ ...j, flashMs: Math.max(0, j.flashMs - deltaMs) }));
+
+  // Wave progression + banner
+  if (next.waveBannerMs <= 0 && next.elapsedMs < 2000) {
+    next.waveBannerMs = 2200;
+  }
+
   const currentWave = waves[next.waveIndex];
   if (currentWave) {
     for (const spawn of currentWave.spawns) {
@@ -297,16 +333,16 @@ export function step(state: GameState, deltaMs: number, waves: Wave[]): GameStat
     next.jeets.length === 0 &&
     next.waveIndex < waves.length - 1
   ) {
-    next = { ...next, elapsedMs: 0, waveIndex: next.waveIndex + 1 };
+    next = { ...next, elapsedMs: 0, waveIndex: next.waveIndex + 1, waveBannerMs: 2200 };
   }
 
-  // Victory condition
+  // Victory
   if (next.waveIndex === waves.length - 1 && next.jeets.length === 0 && next.elapsedMs >= waves[next.waveIndex].durationMs) {
     return { ...next, status: 'victory' };
   }
 
   // Resources falling
-  if (Math.random() < deltaMs * 0.001) {
+  if (Math.random() < deltaMs * 0.0012) {
     next.resources = [
       ...next.resources,
       {
@@ -320,7 +356,7 @@ export function step(state: GameState, deltaMs: number, waves: Wave[]): GameStat
   }
 
   next.resources = next.resources
-    .map((r) => ({ ...r, y: r.y + deltaMs * 0.04, lifetimeMs: r.lifetimeMs - deltaMs }))
+    .map((r) => ({ ...r, y: r.y + deltaMs * 0.04 * (1 + Math.sin(r.x * 0.02) * 0.15), lifetimeMs: r.lifetimeMs - deltaMs }))
     .filter((r) => r.lifetimeMs > 0 && r.y < LOGICAL_HEIGHT + 20);
 
   // Holders: stakers generate liquidity, shooters attack
@@ -331,6 +367,8 @@ export function step(state: GameState, deltaMs: number, waves: Wave[]): GameStat
 
     if (holder.type === 'staker' && cooldown <= 0) {
       next.liquidity += 25;
+      next = addFloatingText(next, holder.x, holder.y - 24, '+25', '#4ade80');
+      next = addParticles(next, holder.x, holder.y, '#fcd34d', 5, 'sparkle');
       cooldown = def.cooldownMs;
     }
 
@@ -365,7 +403,10 @@ export function step(state: GameState, deltaMs: number, waves: Wave[]): GameStat
       const hit = next.jeets.find((j) => j.lane === p.lane && Math.abs(j.x - p.x) < 20 && !hitJeetIds.has(j.id));
       if (hit) {
         hit.hp -= p.damage;
+        hit.flashMs = 120;
         hitJeetIds.add(hit.id);
+        next = addParticles(next, hit.x, hit.y, p.color, 6, 'burst');
+        next = addFloatingText(next, hit.x, hit.y - 18, `-${p.damage}`, p.color);
         return false;
       }
       return true;
@@ -375,6 +416,11 @@ export function step(state: GameState, deltaMs: number, waves: Wave[]): GameStat
   const deadJeets = next.jeets.filter((j) => j.hp <= 0);
   const reward = deadJeets.reduce((sum, j) => sum + JEET_DEFS[j.type].reward, 0);
   next.liquidity += reward;
+  for (const j of deadJeets) {
+    next = addParticles(next, j.x, j.y, JEET_DEFS[j.type].color, 14, 'explosion');
+    next = addFloatingText(next, j.x, j.y - 24, `+${JEET_DEFS[j.type].reward}`, '#fcd34d');
+    next.shakeMs = Math.max(next.shakeMs, 120);
+  }
 
   // Jeets move / eat
   next.jeets = next.jeets
@@ -388,7 +434,9 @@ export function step(state: GameState, deltaMs: number, waves: Wave[]): GameStat
         let attackCooldown = Math.max(0, jeet.attackCooldownMs - deltaMs);
         if (attackCooldown <= 0) {
           holderInFront.hp -= def.damage;
+          holderInFront.flashMs = 150;
           attackCooldown = def.attackCooldownMs;
+          next = addParticles(next, holderInFront.x, holderInFront.y, '#ef4444', 4, 'burst');
         }
         return { ...jeet, x: jeet.x, attackCooldownMs: attackCooldown, isEating: true };
       }
@@ -402,18 +450,77 @@ export function step(state: GameState, deltaMs: number, waves: Wave[]): GameStat
     });
 
   // Clean dead holders
+  const initialHolderCount = next.holders.length;
   next.holders = next.holders.filter((h) => h.hp > 0);
+  if (next.holders.length < initialHolderCount) {
+    next.shakeMs = Math.max(next.shakeMs, 200);
+  }
 
   // Jeets reaching left edge
   const leaked = next.jeets.filter((j) => j.x < GRID.offsetX - GRID.cellSize / 2).length;
   if (leaked > 0) {
     next.lives = Math.max(0, next.lives - leaked);
     next.jeets = next.jeets.filter((j) => j.x >= GRID.offsetX - GRID.cellSize / 2);
+    next.shakeMs = Math.max(next.shakeMs, 250);
   }
+
+  // Update particles and texts
+  next.particles = next.particles
+    .map((p) => ({ ...p, x: p.x + p.vx * deltaMs * 0.06, y: p.y + p.vy * deltaMs * 0.06, lifeMs: p.lifeMs - deltaMs }))
+    .filter((p) => p.lifeMs > 0);
+  next.floatingTexts = next.floatingTexts
+    .map((t) => ({ ...t, y: t.y - deltaMs * 0.02, lifeMs: t.lifeMs - deltaMs }))
+    .filter((t) => t.lifeMs > 0);
 
   if (next.lives <= 0) {
     next.status = 'gameover';
   }
 
   return next;
+}
+
+function addParticles(
+  state: GameState,
+  x: number,
+  y: number,
+  color: string,
+  count: number,
+  style: 'burst' | 'explosion' | 'sparkle'
+): GameState {
+  const out: Particle[] = [...state.particles];
+  for (let i = 0; i < count; i++) {
+    let vx: number;
+    let vy: number;
+    if (style === 'burst' || style === 'explosion') {
+      const angle = Math.random() * Math.PI * 2;
+      const speed = style === 'explosion' ? rnd(3, 7) : rnd(1, 4);
+      vx = Math.cos(angle) * speed;
+      vy = Math.sin(angle) * speed;
+    } else {
+      vx = rnd(-1, 1);
+      vy = rnd(-2, -0.5);
+    }
+    out.push({
+      id: uid('part'),
+      x: x + rnd(-4, 4),
+      y: y + rnd(-4, 4),
+      vx,
+      vy,
+      lifeMs: style === 'sparkle' ? rnd(500, 900) : rnd(350, 700),
+      maxLifeMs: style === 'sparkle' ? 900 : 700,
+      color,
+      size: style === 'explosion' ? rndInt(3, 6) : rndInt(2, 4),
+    });
+  }
+  return { ...state, particles: out };
+}
+
+function addFloatingText(state: GameState, x: number, y: number, text: string, color: string): GameState {
+  return {
+    ...state,
+    floatingTexts: [
+      ...state.floatingTexts,
+      { id: uid('ftxt'), x, y, text, color, lifeMs: 900, maxLifeMs: 900 },
+    ],
+  };
 }

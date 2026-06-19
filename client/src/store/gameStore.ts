@@ -14,10 +14,15 @@ export const createInitialState = (): GameState => ({
   jeets: [],
   projectiles: [],
   resources: [],
+  particles: [],
+  floatingTexts: [],
   selectedSeed: null,
   hoveredCell: null,
   seedCooldowns: {},
   spawnedKeys: [],
+  shakeMs: 0,
+  waveBannerMs: 0,
+  soundEnabled: true,
 });
 
 interface GameStore extends GameState {
