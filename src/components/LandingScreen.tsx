@@ -1,7 +1,7 @@
 import { useEffect } from 'react'
 import { useGame } from '../store/gameStore'
 import { useGameSession } from '../hooks/useGameSession'
-import { NFT_HOLDERS, RARITY_COLORS, RARITY_GLOW, FREE_HOLDERS } from '../game/nftSystem'
+import { NFT_HOLDERS, RARITY_COLORS, FREE_HOLDERS } from '../game/nftSystem'
 import { LEVELS } from '../game/levels'
 import type { HolderType } from '../game/types'
 import { gameAudio } from '../audio/music'
@@ -10,86 +10,145 @@ export function LandingScreen() {
   const { startGame, setPhase } = useGame()
   const session = useGameSession()
 
-  useEffect(() => {
-    gameAudio.startMusic('menu')
-    return () => {} // keep menu music playing
-  }, [])
+  useEffect(() => { gameAudio.startMusic('menu'); return () => {} }, [])
 
   return (
-    <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-start', background: 'radial-gradient(ellipse at 50% 0%, #0f2a1a 0%, #0a0e0a 60%)', color: '#fff', fontFamily: 'monospace', overflow: 'auto' }}>
+    <div style={{ width: '100%', minHeight: '100%', background: '#0a0a14', color: '#fff', fontFamily: 'monospace', overflow: 'auto' }}>
       
-      {/* Top bar with wallet */}
-      <div style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 20px', background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(10px)', position: 'sticky', top: 0, zIndex: 10 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <span style={{ fontSize: 14, fontWeight: 900, color: '#4ade80' }}>H</span>
-          <span style={{ fontSize: 14, fontWeight: 900, color: '#fbbf24' }}>v</span>
-          <span style={{ fontSize: 14, fontWeight: 900, color: '#ef4444' }}>J</span>
+      {/* Animated cyberpunk background */}
+      <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', zIndex: 0, pointerEvents: 'none',
+        background: 'linear-gradient(180deg, #0a0a1a 0%, #12101f 30%, #0f0a18 60%, #08060f 100%)' }}>
+        {/* City buildings silhouette */}
+        <div style={{ position: 'absolute', bottom: 0, width: '100%', height: '40%',
+          background: 'linear-gradient(0deg, rgba(10,5,20,0.9) 0%, transparent 100%)' }} />
+        {/* Lightning glow */}
+        <div style={{ position: 'absolute', top: '10%', left: '20%', width: 300, height: 300, borderRadius: '50%',
+          background: 'radial-gradient(circle, rgba(168,85,247,0.08) 0%, transparent 70%)', filter: 'blur(40px)' }} />
+        <div style={{ position: 'absolute', top: '5%', right: '15%', width: 250, height: 250, borderRadius: '50%',
+          background: 'radial-gradient(circle, rgba(59,130,246,0.06) 0%, transparent 70%)', filter: 'blur(30px)' }} />
+      </div>
+
+      {/* Navbar */}
+      <nav style={{ position: 'sticky', top: 0, zIndex: 20, display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 24px', background: 'rgba(10,5,20,0.7)', backdropFilter: 'blur(12px)', borderBottom: '1px solid rgba(168,85,247,0.15)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <span style={{ fontSize: 18, fontWeight: 900, color: '#4ade80' }}>👑</span>
+          <span style={{ fontSize: 14, fontWeight: 800, letterSpacing: '0.05em' }}>
+            <span style={{ color: '#4ade80' }}>H</span><span style={{ color: '#fbbf24' }}>v</span><span style={{ color: '#ef4444' }}>J</span>
+          </span>
         </div>
-        {session.hasWallet ? (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            {session.player && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 10 }}>
-                <span style={{ color: '#fbbf24' }}>LVL {session.player.level}</span>
-                <span style={{ color: '#64748b' }}>|</span>
-                <span style={{ color: '#4ade80' }}>{session.player.total_score.toLocaleString()} pts</span>
-              </div>
-            )}
-            <button onClick={session.disconnect} style={{ background: 'rgba(239,68,68,0.2)', border: '1px solid #ef4444', color: '#ef4444', borderRadius: 8, padding: '6px 14px', fontFamily: 'monospace', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>
-              {session.shortAddr}
+        <div style={{ display: 'flex', gap: 20, alignItems: 'center' }}>
+          {['Home', 'Game', 'Tokenomics', 'Leaderboard', 'FAQ', 'Roadmap'].map(item => (
+            <span key={item} style={{ fontSize: 11, color: '#94a3b8', cursor: 'pointer' }}>{item}</span>
+          ))}
+          {session.hasWallet ? (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              {session.player && <span style={{ fontSize: 10, color: '#fbbf24' }}>LVL {session.player.level}</span>}
+              <button onClick={session.disconnect} style={{ background: 'rgba(239,68,68,0.15)', border: '1px solid #ef4444', color: '#ef4444', borderRadius: 8, padding: '6px 14px', fontFamily: 'monospace', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>{session.shortAddr}</button>
+            </div>
+          ) : (
+            <button onClick={session.connect} disabled={session.connecting} style={{ background: session.connecting ? '#333' : 'linear-gradient(135deg, #9945FF, #14F195)', border: 'none', color: '#000', borderRadius: 8, padding: '8px 18px', fontFamily: 'monospace', fontSize: 11, fontWeight: 800, cursor: session.connecting ? 'wait' : 'pointer', boxShadow: '0 0 15px rgba(153,69,255,0.3)' }}>
+              {session.connecting ? '...' : 'Connect Wallet'}
             </button>
-          </div>
-        ) : (
-          <button onClick={session.connect} disabled={session.connecting} style={{ background: session.connecting ? '#333' : 'linear-gradient(135deg, #9945FF, #14F195)', border: 'none', color: '#000', borderRadius: 8, padding: '8px 20px', fontFamily: 'monospace', fontSize: 12, fontWeight: 800, cursor: session.connecting ? 'wait' : 'pointer', boxShadow: '0 0 20px rgba(153,69,255,0.3)' }}>
-            {session.connecting ? 'CONNECTING...' : '🪙 CONNECT WALLET'}
-          </button>
-        )}
-      </div>
-
-      {/* Hero section */}
-      <div style={{ textAlign: 'center', padding: '60px 20px 40px', maxWidth: 600 }}>
-        <div style={{ fontSize: 'clamp(0.7rem, 2vw, 0.9rem)', color: '#fbbf24', letterSpacing: '0.3em', marginBottom: 12, textTransform: 'uppercase' }}>
-          Defend Your Bag
+          )}
         </div>
-        <h1 style={{ fontSize: 'clamp(2.5rem, 8vw, 5rem)', fontWeight: 900, lineHeight: 1, marginBottom: 0 }}>
-          <span style={{ color: '#4ade80', textShadow: '0 0 40px rgba(74,222,128,0.5)' }}>HOLDERS</span>
-        </h1>
-        <div style={{ fontSize: 'clamp(1.2rem, 4vw, 2rem)', color: '#fbbf24', fontWeight: 700, margin: '4px 0' }}>VS</div>
-        <h1 style={{ fontSize: 'clamp(2.5rem, 8vw, 5rem)', fontWeight: 900, lineHeight: 1, margin: 0 }}>
-          <span style={{ color: '#ef4444', textShadow: '0 0 40px rgba(239,68,68,0.5)' }}>JEETS</span>
-        </h1>
-        <p style={{ color: '#94a3b8', fontSize: 'clamp(0.75rem, 2vw, 1rem)', marginTop: 24, lineHeight: 1.6, maxWidth: 450, margin: '24px auto 0' }}>
-          Deploy staking pools, DCA bots, and diamond hands. Survive waves of paper-handed jeets. Earn NFTs. Climb the leaderboard.
-        </p>
+      </nav>
+
+      {/* Hero Section */}
+      <div style={{ position: 'relative', zIndex: 10, display: 'flex', flexDirection: 'column', alignItems: 'center', paddingTop: 50, paddingBottom: 30 }}>
+        
+        {/* Title */}
+        <div style={{ textAlign: 'center', marginBottom: 20 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 16 }}>
+            <span style={{ fontSize: 28 }}>👑</span>
+            <h1 style={{ fontSize: 'clamp(2.5rem, 7vw, 4.5rem)', fontWeight: 900, margin: 0, lineHeight: 1 }}>
+              <span style={{ color: '#4ade80', textShadow: '0 0 40px rgba(74,222,128,0.6)' }}>HOLDERS</span>
+            </h1>
+          </div>
+          <div style={{ fontSize: 'clamp(1rem, 3vw, 1.8rem)', fontWeight: 700, margin: '2px 0', color: '#fbbf24' }}>VS</div>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 16 }}>
+            <h1 style={{ fontSize: 'clamp(2.5rem, 7vw, 4.5rem)', fontWeight: 900, margin: 0, lineHeight: 1 }}>
+              <span style={{ color: '#ef4444', textShadow: '0 0 40px rgba(239,68,68,0.6)' }}>JEETS</span>
+            </h1>
+            <span style={{ fontSize: 28 }}>💀</span>
+          </div>
+        </div>
+
+        {/* Tagline */}
+        <div style={{ fontSize: 'clamp(0.8rem, 2vw, 1.2rem)', color: '#fbbf24', letterSpacing: '0.3em', textTransform: 'uppercase', marginBottom: 30, fontWeight: 600 }}>
+          THE MEMECOIN BATTLE BEGINS
+        </div>
+
+        {/* Character silhouettes — left (HODL) and right (JEET) */}
+        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'flex-end', gap: '5%', width: '90%', maxWidth: 800, marginBottom: 30 }}>
+          {/* Left: HODL team */}
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: 60, filter: 'drop-shadow(0 0 15px rgba(74,222,128,0.4))' }}>🦍</div>
+            <div style={{ fontSize: 9, color: '#4ade80', fontWeight: 700, letterSpacing: '0.1em' }}>HODL</div>
+          </div>
+          {/* Center: VS */}
+          <div style={{ fontSize: 40, color: '#fbbf24', fontWeight: 900, textShadow: '0 0 20px rgba(251,191,36,0.4)' }}>⚔️</div>
+          {/* Right: JEET team */}
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: 60, filter: 'drop-shadow(0 0 15px rgba(239,68,68,0.4))' }}>🤡</div>
+            <div style={{ fontSize: 9, color: '#ef4444', fontWeight: 700, letterSpacing: '0.1em' }}>JEET</div>
+          </div>
+        </div>
+
+        {/* CTA Buttons */}
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, marginBottom: 40 }}>
+          <button onClick={() => startGame()} style={{
+            background: 'linear-gradient(135deg, #22c55e, #16a34a)', color: '#000', border: 'none', borderRadius: 12,
+            padding: '16px 48px', fontSize: 18, fontWeight: 900, fontFamily: 'monospace', cursor: 'pointer',
+            boxShadow: '0 0 30px rgba(74,222,128,0.3), 0 4px 0 #15803d', letterSpacing: '0.1em', textTransform: 'uppercase',
+          }}>▶ Play Now</button>
+          <div style={{ display: 'flex', gap: 12 }}>
+            <button onClick={() => setPhase('howto')} style={secondaryBtn('#3b82f6')}>How to Play</button>
+            <button onClick={() => setPhase('leaderboard')} style={secondaryBtn('#fbbf24')}>Leaderboard</button>
+          </div>
+        </div>
+
+        {/* Rewards Pool */}
+        <div style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid #ef4444', borderRadius: 12, padding: '12px 24px', marginBottom: 40, textAlign: 'center' }}>
+          <div style={{ fontSize: 9, color: '#94a3b8', letterSpacing: '0.15em' }}>SEASON 1 REWARDS POOL</div>
+          <div style={{ fontSize: 28, fontWeight: 900, color: '#fbbf24', textShadow: '0 0 20px rgba(251,191,36,0.3)' }}>$250,000</div>
+        </div>
       </div>
 
-      {/* CTA buttons */}
-      <div style={{ display: 'flex', gap: 12, marginBottom: 50, flexWrap: 'wrap', justifyContent: 'center' }}>
-        <button onClick={() => startGame()} style={ctaBtn('#22c55e', '#16a34a', '#000')}>▶ PLAY NOW</button>
-        <button onClick={() => setPhase('howto')} style={ctaBtn('transparent', 'transparent', '#4ade80', '#4ade80')}>HOW TO PLAY</button>
-        <button onClick={() => setPhase('leaderboard')} style={ctaBtn('transparent', 'transparent', '#fbbf24', '#fbbf24')}>🏆 LEADERBOARD</button>
+      {/* Features Grid */}
+      <div style={{ position: 'relative', zIndex: 10, display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 16, maxWidth: 700, margin: '0 auto 50px', padding: '0 20px' }}>
+        {[
+          { icon: '⚔️', title: 'Real-Time PVP', desc: 'Battle other holders live' },
+          { icon: '🧠', title: 'Strategy & Skill', desc: 'Outsmart the jeets' },
+          { icon: '💰', title: 'Earn Rewards', desc: 'Win tokens & NFTs' },
+          { icon: '🌐', title: 'Play Anywhere', desc: 'Browser-based, no download' },
+        ].map(f => (
+          <div key={f.title} style={{ background: 'rgba(15,10,25,0.6)', border: '1px solid rgba(168,85,247,0.15)', borderRadius: 10, padding: 16, textAlign: 'center' }}>
+            <div style={{ fontSize: 28, marginBottom: 8 }}>{f.icon}</div>
+            <div style={{ fontSize: 12, fontWeight: 700, color: '#4ade80', marginBottom: 4 }}>{f.title}</div>
+            <div style={{ fontSize: 9, color: '#64748b' }}>{f.desc}</div>
+          </div>
+        ))}
       </div>
 
       {/* NFT Showcase */}
-      <div style={{ width: '90%', maxWidth: 700, marginBottom: 50 }}>
+      <div style={{ position: 'relative', zIndex: 10, maxWidth: 700, margin: '0 auto 50px', padding: '0 20px' }}>
         <h2 style={{ fontSize: 14, color: '#a855f7', textAlign: 'center', marginBottom: 6, letterSpacing: '0.1em' }}>🎮 HOLDER NFTs</h2>
         <p style={{ fontSize: 10, color: '#64748b', textAlign: 'center', marginBottom: 20 }}>Unlock powerful holders as NFTs by completing levels</p>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: 10 }}>
-          {/* Free holders */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: 10 }}>
           {FREE_HOLDERS.map((type) => (
-            <NFTCard key={type} type={type} owned={true} rarity="common" name={type === 'staking_pool' ? 'Staking Pool' : 'DCA Bot'} desc="Free starter" emoji="✅" />
+            <NFTCardMini key={type} owned={true} rarity="common" name={type === 'staking_pool' ? 'Staking Pool' : 'DCA Bot'} desc="Free starter" emoji="✅" />
           ))}
-          {/* NFT holders */}
           {(Object.keys(NFT_HOLDERS) as HolderType[]).map((type) => {
             const nft = NFT_HOLDERS[type]
             if (!nft) return null
             const owned = session.ownedHolders.includes(type)
-            return <NFTCard key={type} type={type} owned={owned} rarity={nft.rarity} name={nft.nftName.replace(' NFT', '')} desc={nft.description} emoji={nft.emoji} />
+            return <NFTCardMini key={type} owned={owned} rarity={nft.rarity} name={nft.nftName.replace(' NFT', '')} desc={nft.description} emoji={nft.emoji} />
           })}
         </div>
       </div>
 
       {/* Roadmap */}
-      <div style={{ width: '90%', maxWidth: 700, marginBottom: 50 }}>
+      <div style={{ position: 'relative', zIndex: 10, maxWidth: 700, margin: '0 auto 50px', padding: '0 20px' }}>
         <h2 style={{ fontSize: 14, color: '#4ade80', textAlign: 'center', marginBottom: 20, letterSpacing: '0.1em' }}>🗺️ ROADMAP</h2>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           <RoadmapItem done text="Game Launch" desc="Core tower defense gameplay" color="#4ade80" />
@@ -101,13 +160,13 @@ export function LandingScreen() {
         </div>
       </div>
 
-      {/* Level preview */}
-      <div style={{ width: '90%', maxWidth: 700, marginBottom: 50 }}>
+      {/* Levels preview */}
+      <div style={{ position: 'relative', zIndex: 10, maxWidth: 700, margin: '0 auto 50px', padding: '0 20px' }}>
         <h2 style={{ fontSize: 14, color: '#f97316', textAlign: 'center', marginBottom: 20, letterSpacing: '0.1em' }}>⚔️ BATTLE LEVELS</h2>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, justifyContent: 'center' }}>
           {LEVELS.slice(0, 5).map(l => (
-            <div key={l.num} style={{ background: 'rgba(15,20,15,0.6)', border: `1px solid ${l.bossLevel ? '#ef4444' : '#333'}`, borderRadius: 8, padding: '10px 14px', minWidth: 120 }}>
-              <div style={{ fontSize: 9, color: '#64748b' }}>LEVEL {l.num}</div>
+            <div key={l.num} style={{ background: 'rgba(15,10,25,0.6)', border: `1px solid ${l.bossLevel ? '#ef4444' : 'rgba(168,85,247,0.2)'}`, borderRadius: 8, padding: '10px 14px', minWidth: 110 }}>
+              <div style={{ fontSize: 8, color: '#64748b' }}>LEVEL {l.num}</div>
               <div style={{ fontSize: 11, fontWeight: 700, color: l.bossLevel ? '#ef4444' : '#e2e8f0' }}>{l.name}</div>
               {l.bossLevel && <div style={{ fontSize: 7, color: '#ef4444', marginTop: 2 }}>⚠ BOSS</div>}
             </div>
@@ -115,37 +174,36 @@ export function LandingScreen() {
         </div>
       </div>
 
-      <div style={{ color: '#334155', fontSize: 9, paddingBottom: 30, textAlign: 'center' }}>
-        HOLDERS VS JEETS · BUILT ON SOLANA · 2026
+      {/* Footer */}
+      <div style={{ position: 'relative', zIndex: 10, textAlign: 'center', padding: '30px 20px', borderTop: '1px solid rgba(168,85,247,0.1)' }}>
+        <div style={{ display: 'flex', justifyContent: 'center', gap: 16, marginBottom: 12 }}>
+          {['𝕏', '📱', '🎮'].map((icon, i) => <span key={i} style={{ fontSize: 18, cursor: 'pointer', opacity: 0.6 }}>{icon}</span>)}
+        </div>
+        <div style={{ fontSize: 8, color: '#334155' }}>HOLDERS VS JEETS · BUILT ON SOLANA · 2026</div>
+        <div style={{ fontSize: 7, color: '#1e293b', marginTop: 4 }}>
+          <span style={{ cursor: 'pointer' }}>Terms of Service</span> · <span style={{ cursor: 'pointer' }}>Privacy Policy</span>
+        </div>
       </div>
     </div>
   )
 }
 
-function NFTCard({ type, owned, rarity, name, desc, emoji }: { type: string; owned: boolean; rarity: string; name: string; desc: string; emoji: string }) {
+function NFTCardMini({ owned, rarity, name, desc, emoji }: { owned: boolean; rarity: string; name: string; desc: string; emoji: string }) {
   const color = RARITY_COLORS[rarity as keyof typeof RARITY_COLORS] || '#666'
-  const glow = RARITY_GLOW[rarity as keyof typeof RARITY_GLOW] || 'transparent'
   return (
-    <div style={{
-      background: owned ? `linear-gradient(135deg, ${color}11, ${color}05)` : 'rgba(10,10,10,0.5)',
-      border: `1px solid ${owned ? color : '#1a1a1a'}`,
-      borderRadius: 10, padding: 12, position: 'relative',
-      boxShadow: owned ? `0 0 15px ${glow}` : 'none',
-    }}>
+    <div style={{ background: owned ? `linear-gradient(135deg, ${color}15, ${color}05)` : 'rgba(10,5,15,0.5)', border: `1px solid ${owned ? color : '#1a1a2a'}`, borderRadius: 10, padding: 12, textAlign: 'center' }}>
       <div style={{ fontSize: 24, marginBottom: 6, filter: owned ? 'none' : 'grayscale(1) opacity(0.3)' }}>{owned ? emoji : '🔒'}</div>
       <div style={{ fontSize: 10, fontWeight: 700, color: owned ? color : '#475569', marginBottom: 4 }}>{name}</div>
       <div style={{ fontSize: 8, color: '#64748b', lineHeight: 1.3 }}>{desc}</div>
-      <div style={{ fontSize: 7, color, marginTop: 6, textTransform: 'uppercase', letterSpacing: '0.1em' }}>{rarity}</div>
+      <div style={{ fontSize: 7, color, marginTop: 6, textTransform: 'uppercase' }}>{rarity}</div>
     </div>
   )
 }
 
 function RoadmapItem({ done, text, desc, color }: { done: boolean; text: string; desc: string; color: string }) {
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px', background: 'rgba(15,20,15,0.4)', border: `1px solid ${done ? color + '44' : '#1a1a1a'}`, borderRadius: 8 }}>
-      <div style={{ width: 24, height: 24, borderRadius: '50%', background: done ? color : '#1a1a1a', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, color: '#000', fontWeight: 700 }}>
-        {done ? '✓' : '○'}
-      </div>
+    <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px', background: 'rgba(15,10,25,0.4)', border: `1px solid ${done ? color + '44' : 'rgba(30,30,50,0.5)'}`, borderRadius: 8 }}>
+      <div style={{ width: 24, height: 24, borderRadius: '50%', background: done ? color : '#1a1a2a', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, color: '#000', fontWeight: 700 }}>{done ? '✓' : '○'}</div>
       <div>
         <div style={{ fontSize: 12, fontWeight: 700, color: done ? color : '#64748b' }}>{text}</div>
         <div style={{ fontSize: 9, color: '#475569' }}>{desc}</div>
@@ -154,12 +212,10 @@ function RoadmapItem({ done, text, desc, color }: { done: boolean; text: string;
   )
 }
 
-function ctaBtn(bg: string, shadow: string, color: string, border?: string): React.CSSProperties {
+function secondaryBtn(color: string): React.CSSProperties {
   return {
-    background: bg, color, border: border ? `2px solid ${border}` : 'none',
-    borderRadius: 10, padding: '14px 32px', fontSize: 15, fontWeight: 800,
-    fontFamily: 'monospace', cursor: 'pointer', letterSpacing: '0.05em',
-    boxShadow: shadow !== 'transparent' ? `0 4px 0 ${shadow}, 0 6px 20px rgba(0,0,0,0.3)` : 'none',
-    textTransform: 'uppercase', transition: 'transform 0.1s',
+    background: 'transparent', color, border: `1px solid ${color}66`, borderRadius: 10,
+    padding: '10px 20px', fontSize: 12, fontWeight: 700, fontFamily: 'monospace',
+    cursor: 'pointer', letterSpacing: '0.05em',
   }
 }

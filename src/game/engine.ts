@@ -452,38 +452,107 @@ export class GameEngine {
   }
 
   renderBackground(ctx: CanvasRenderingContext2D) {
+    // Urban night background — dark purple/blue gradient
     const g = ctx.createLinearGradient(0, 0, 0, CANVAS_H)
-    g.addColorStop(0, '#0a1a0a'); g.addColorStop(0.5, '#0f1f0f'); g.addColorStop(1, '#0a0e0a')
+    g.addColorStop(0, '#0d0a1a'); g.addColorStop(0.3, '#12101f')
+    g.addColorStop(0.6, '#0f0a15'); g.addColorStop(1, '#080610')
     ctx.fillStyle = g; ctx.fillRect(0, 0, CANVAS_W, CANVAS_H)
-    ctx.strokeStyle = 'rgba(34, 197, 94, 0.05)'; ctx.lineWidth = 1
-    for (let x = 0; x < CANVAS_W; x += 20) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, CANVAS_H); ctx.stroke() }
-    for (let y = 0; y < CANVAS_H; y += 20) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(CANVAS_W, y); ctx.stroke() }
-    ctx.save(); ctx.globalAlpha = 0.08
-    for (let i = 0; i < 40; i++) {
-      const x = (i * 40 + this.gameTime * 5) % CANVAS_W
-      const baseY = 50 + (i % 7) * 60
-      const h = 10 + (i % 3) * 8
-      ctx.fillStyle = i % 3 !== 0 ? '#22c55e' : '#ef4444'
-      ctx.fillRect(x, baseY - h / 2, 4, h)
+
+    // City buildings silhouette at bottom
+    ctx.fillStyle = 'rgba(10,5,15,0.6)'
+    for (let i = 0; i < 15; i++) {
+      const bx = (i * 80 + (this.gameTime * 2)) % (CANVAS_W + 100) - 50
+      const bw = 50 + (i % 3) * 20
+      const bh = 60 + (i % 5) * 30
+      ctx.fillRect(bx, CANVAS_H - bh, bw, bh)
+      // Windows
+      ctx.fillStyle = 'rgba(251,191,36,0.04)'
+      for (let wy = 0; wy < bh; wy += 12) {
+        for (let wx = 0; wx < bw; wx += 8) {
+          if (Math.random() > 0.7 || (i + wy + wx) % 5 === 0)
+            ctx.fillRect(bx + wx + 2, CANVAS_H - bh + wy + 2, 3, 4)
+        }
+      }
+      ctx.fillStyle = 'rgba(10,5,15,0.6)'
+    }
+
+    // Purple lightning glow
+    const glow = ctx.createRadialGradient(CANVAS_W * 0.3, CANVAS_H * 0.2, 0, CANVAS_W * 0.3, CANVAS_H * 0.2, 300)
+    glow.addColorStop(0, 'rgba(168,85,247,0.06)')
+    glow.addColorStop(1, 'rgba(0,0,0,0)')
+    ctx.fillStyle = glow; ctx.fillRect(0, 0, CANVAS_W, CANVAS_H)
+
+    // Candlestick chart pattern (faint, scrolling)
+    ctx.save(); ctx.globalAlpha = 0.06
+    for (let i = 0; i < 30; i++) {
+      const x = ((i * 50 + this.gameTime * 8) % CANVAS_W) - 50
+      const baseY = 80 + (i % 4) * 80
+      const h = 8 + (i % 3) * 6
+      ctx.fillStyle = i % 4 !== 0 ? '#22c55e' : '#ef4444'
+      ctx.fillRect(x, baseY - h / 2, 5, h)
+      // Wick
+      ctx.strokeStyle = 'rgba(100,100,100,0.3)'; ctx.lineWidth = 0.5
+      ctx.beginPath(); ctx.moveTo(x + 2.5, baseY - h/2 - 3); ctx.lineTo(x + 2.5, baseY - h/2); ctx.stroke()
     }
     ctx.restore()
   }
 
   renderGrid(ctx: CanvasRenderingContext2D) {
+    // Stone tile grid — cobblestone appearance
     for (let r = 0; r < GRID_ROWS; r++) {
       for (let c = 0; c < GRID_COLS; c++) {
-        const x = GRID_OFFSET_X + c * CELL_W, y = GRID_OFFSET_Y + r * CELL_H
-        ctx.fillStyle = (r + c) % 2 === 0 ? 'rgba(34, 197, 94, 0.06)' : 'rgba(34, 197, 94, 0.03)'
+        const x = GRID_OFFSET_X + c * CELL_W
+        const y = GRID_OFFSET_Y + r * CELL_H
+        // Base tile
+        const isEven = (r + c) % 2 === 0
+        const tileColor = isEven ? '#1a1a22' : '#16161e'
+        ctx.fillStyle = tileColor
         ctx.fillRect(x, y, CELL_W, CELL_H)
+
+        // Cobblestone texture — random small stones
+        ctx.fillStyle = isEven ? 'rgba(40,35,55,0.3)' : 'rgba(30,28,45,0.3)'
+        for (let i = 0; i < 8; i++) {
+          const sx = x + (i * 11 + (r * 7 + c * 3)) % (CELL_W - 8)
+          const sy = y + (i * 13 + (c * 5 + r * 11)) % (CELL_H - 8)
+          ctx.beginPath()
+          ctx.arc(sx, sy, 3 + (i % 2), 0, Math.PI * 2)
+          ctx.fill()
+        }
+
+        // Grid lines (green, subtle)
+        ctx.strokeStyle = 'rgba(74,222,128,0.08)'; ctx.lineWidth = 1
+        ctx.strokeRect(x, y, CELL_W, CELL_H)
+
+        // Inner bevel (dark)
+        ctx.strokeStyle = 'rgba(0,0,0,0.4)'; ctx.lineWidth = 1
+        ctx.beginPath()
+        ctx.moveTo(x, y + CELL_H); ctx.lineTo(x, y); ctx.lineTo(x + CELL_W, y)
+        ctx.stroke()
       }
     }
-    ctx.strokeStyle = 'rgba(34, 197, 94, 0.1)'; ctx.lineWidth = 1
+
+    // Lane separators (green glow lines)
+    ctx.strokeStyle = 'rgba(74,222,128,0.12)'; ctx.lineWidth = 1
     for (let r = 0; r <= GRID_ROWS; r++) {
       const y = GRID_OFFSET_Y + r * CELL_H
       ctx.beginPath(); ctx.moveTo(GRID_OFFSET_X, y); ctx.lineTo(GRID_OFFSET_X + GRID_COLS * CELL_W, y); ctx.stroke()
     }
-    ctx.fillStyle = 'rgba(239, 68, 68, 0.05)'
-    ctx.fillRect(GRID_OFFSET_X - 20, GRID_OFFSET_Y, 20, GRID_ROWS * CELL_H)
+
+    // Left edge danger zone (red glow)
+    const dangerGrad = ctx.createLinearGradient(GRID_OFFSET_X - 25, 0, GRID_OFFSET_X, 0)
+    dangerGrad.addColorStop(0, 'rgba(239,68,68,0.08)')
+    dangerGrad.addColorStop(1, 'rgba(239,68,68,0)')
+    ctx.fillStyle = dangerGrad
+    ctx.fillRect(GRID_OFFSET_X - 25, GRID_OFFSET_Y, 25, GRID_ROWS * CELL_H)
+    // Warning stripe
+    ctx.fillStyle = 'rgba(239,68,68,0.12)'
+    for (let i = 0; i < GRID_ROWS * 4; i++) {
+      const y = GRID_OFFSET_Y + i * (CELL_H / 4)
+      ctx.save(); ctx.translate(GRID_OFFSET_X - 22, y)
+      ctx.rotate(Math.PI / 4)
+      ctx.fillRect(0, 0, 8, 3)
+      ctx.restore()
+    }
   }
 
   renderParticles(ctx: CanvasRenderingContext2D) {
@@ -502,32 +571,77 @@ export class GameEngine {
   }
 
   renderCanvasHUD(ctx: CanvasRenderingContext2D) {
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.7)'; ctx.fillRect(0, 0, CANVAS_W, 110)
-    ctx.fillStyle = '#fbbf24'; ctx.font = 'bold 24px monospace'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle'
+    // HUD bar background — dark glass
+    ctx.fillStyle = 'rgba(10,5,20,0.85)'
+    ctx.fillRect(0, 0, CANVAS_W, 110)
+    // Border
+    ctx.strokeStyle = 'rgba(168,85,247,0.2)'; ctx.lineWidth = 1
+    ctx.beginPath(); ctx.moveTo(0, 110); ctx.lineTo(CANVAS_W, 110); ctx.stroke()
+
+    // $TENDIES counter (left)
+    ctx.fillStyle = '#fbbf24'; ctx.font = 'bold 22px monospace'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle'
     ctx.fillText(`$${Math.floor(this.tendies)}`, 20, 35)
-    ctx.fillStyle = '#4ade80'; ctx.font = 'bold 16px monospace'; ctx.textAlign = 'center'
-    ctx.fillText(`SCORE: ${this.stats.score}`, CANVAS_W / 2, 20)
-    ctx.fillStyle = '#f97316'; ctx.font = 'bold 14px monospace'
-    const waveText = this.waveActive ? `WAVE ${this.stats.wave} / ${TOTAL_WAVES}` : `PREPARE FOR WAVE ${this.currentWaveIndex + 1} / ${TOTAL_WAVES}`
-    ctx.fillText(waveText, CANVAS_W / 2, 45)
-    if (this.waveActive) {
-      const wave = this.waves[this.currentWaveIndex]
-      const pct = this.waveSpawnIndex / wave.spawns.length
-      const barW = 200, barH = 6, barX = CANVAS_W / 2 - barW / 2, barY = 62
-      ctx.fillStyle = '#1a1a1a'; ctx.fillRect(barX - 1, barY - 1, barW + 2, barH + 2)
-      ctx.fillStyle = '#f97316'; ctx.fillRect(barX, barY, barW * pct, barH)
-    }
+    // Label
+    ctx.fillStyle = '#475569'; ctx.font = 'bold 8px monospace'
+    ctx.fillText('TENDIES', 20, 55)
+
+    // Timer (center-left)
+    const mins = Math.floor(this.gameTime / 60)
+    const secs = Math.floor(this.gameTime % 60)
+    ctx.fillStyle = '#94a3b8'; ctx.font = 'bold 16px monospace'; ctx.textAlign = 'center'
+    ctx.fillText(`${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`, CANVAS_W * 0.25, 35)
+
+    // Score (center)
+    ctx.fillStyle = '#4ade80'; ctx.font = 'bold 18px monospace'
+    ctx.fillText(`${this.stats.score.toLocaleString()}`, CANVAS_W / 2, 25)
+    ctx.fillStyle = '#475569'; ctx.font = 'bold 8px monospace'
+    ctx.fillText('SCORE', CANVAS_W / 2, 45)
+
+    // Dual bars: Holders vs Jeets (center, below score)
+    const barW = 180, barH = 8, barX = CANVAS_W / 2 - barW / 2, barY = 60
+    // Holders bar (green, fills by progress)
+    const holderPct = this.waveActive ? Math.min(1, (this.waveSpawnIndex / Math.max(1, this.waves[this.currentWaveIndex]?.spawns.length || 1))) : 0
+    ctx.fillStyle = '#0a0a0a'; ctx.fillRect(barX - 2, barY - 2, barW + 4, barH + 4)
+    ctx.fillStyle = '#1a1a2a'; ctx.fillRect(barX, barY, barW, barH)
+    ctx.fillStyle = '#4ade80'; ctx.fillRect(barX, barY, barW * holderPct, barH)
+    // Jeets bar (red, fills by jeets remaining)
+    const jeetPct = this.jeets.length > 0 ? Math.min(1, this.jeets.length / 10) : 0
+    ctx.fillStyle = '#1a1a2a'; ctx.fillRect(barX, barY + barH + 2, barW, barH)
+    ctx.fillStyle = '#ef4444'; ctx.fillRect(barX, barY + barH + 2, barW * jeetPct, barH)
+    // Labels
+    ctx.fillStyle = '#4ade80'; ctx.font = 'bold 7px monospace'; ctx.textAlign = 'left'
+    ctx.fillText('HOLDERS', barX, barY - 4)
+    ctx.fillStyle = '#ef4444'; ctx.textAlign = 'left'
+    ctx.fillText('JEETS', barX, barY + barH + 8)
+
+    // Wave indicator (center, below bars)
+    ctx.fillStyle = '#f97316'; ctx.font = 'bold 12px monospace'; ctx.textAlign = 'center'
+    const waveText = this.waveActive ? `WAVE ${this.stats.wave}/${TOTAL_WAVES}` : `PREPARE FOR WAVE ${this.currentWaveIndex + 1}/${TOTAL_WAVES}`
+    ctx.fillText(waveText, CANVAS_W / 2, 96)
+
+    // Exit Liquidity / NGMI buttons (right side)
+    ctx.fillStyle = 'rgba(239,68,68,0.15)'; ctx.font = 'bold 8px monospace'; ctx.textAlign = 'right'
+    ctx.fillText('EXIT LIQ', CANVAS_W - 20, 25)
+    ctx.fillStyle = 'rgba(239,68,68,0.1)'
+    ctx.fillText('NGMI', CANVAS_W - 80, 25)
+
+    // Combo (top-right, below buttons)
     if (this.stats.combo > 1) {
       ctx.fillStyle = `rgba(251, 191, 36, ${Math.min(1, this.stats.comboTimer / 3)})`
-      ctx.font = 'bold 18px monospace'; ctx.textAlign = 'right'
-      ctx.fillText(`${this.stats.combo}x COMBO!`, CANVAS_W - 20, 35)
+      ctx.font = 'bold 16px monospace'; ctx.textAlign = 'right'
+      ctx.fillText(`${this.stats.combo}x COMBO!`, CANVAS_W - 20, 50)
     }
 
+    // Card bar (bottom)
     const cardW = 64, cardH = 80, cardGap = 4
     const totalW = HOLDER_ORDER.length * (cardW + cardGap) - cardGap
     const startX = (CANVAS_W - totalW) / 2
     const cardY = CANVAS_H - cardH - 10
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.8)'; ctx.fillRect(0, cardY - 6, CANVAS_W, cardH + 16)
+    // Card bar background
+    ctx.fillStyle = 'rgba(10,5,20,0.9)'; ctx.fillRect(0, cardY - 6, CANVAS_W, cardH + 16)
+    ctx.strokeStyle = 'rgba(168,85,247,0.1)'; ctx.lineWidth = 1
+    ctx.beginPath(); ctx.moveTo(0, cardY - 6); ctx.lineTo(CANVAS_W, cardY - 6); ctx.stroke()
+
     for (let i = 0; i < HOLDER_ORDER.length; i++) {
       const type = HOLDER_ORDER[i]
       const def = HOLDER_DEFS[type]
@@ -535,16 +649,18 @@ export class GameEngine {
       const available = this.tendies >= def.cost && this.cardCooldowns[type] <= 0
       const cdPct = this.cardCooldowns[type] / def.cooldown
       drawHolderCard(ctx, type, x, cardY, cardW, cardH, available, cdPct)
+      // Cost
       ctx.fillStyle = available ? '#fbbf24' : '#666'; ctx.font = 'bold 10px monospace'
       ctx.textAlign = 'center'; ctx.textBaseline = 'middle'
       ctx.fillText(`${def.cost}`, x + cardW / 2, cardY + cardH + 8)
+      // Selected highlight
       if (this.selectedHolder === type) {
         ctx.strokeStyle = '#fbbf24'; ctx.lineWidth = 3
         ctx.strokeRect(x - 2, cardY - 2, cardW + 4, cardH + 4)
       }
+      // Name
       ctx.fillStyle = available ? '#4ade80' : '#444'; ctx.font = 'bold 7px monospace'; ctx.textAlign = 'center'
-      const shortName = def.name.split(' ').map(w => w.slice(0, 3)).join(' ')
-      ctx.fillText(shortName, x + cardW / 2, cardY - 8)
+      ctx.fillText(def.name.split(' ').map((w: string) => w.slice(0, 3)).join(' '), x + cardW / 2, cardY - 8)
     }
   }
 }
