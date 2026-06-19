@@ -1,25 +1,5 @@
-# Dependencies
-node_modules/
-.pnpm-store/
-.yarn-cache/
-
-# Build outputs
-dist/
-*.tsbuildinfo
-
-# Environment
+node_modules
+dist
 .env
-.env.local
-.env.*.local
-
-# OS
+*.local
 .DS_Store
-Thumbs.db
-
-# IDE
-.vscode/
-.idea/
-
-# Logs
-*.log
-npm-debug.log*
