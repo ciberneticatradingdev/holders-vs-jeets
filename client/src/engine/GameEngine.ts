@@ -346,6 +346,7 @@ export function step(state: GameState, deltaMs: number, waves: Wave[]): GameStat
           speed: 320,
           damage: def.damage,
           color: def.color,
+          holderType: holder.type,
         });
       }
     }

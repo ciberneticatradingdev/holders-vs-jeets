@@ -15,6 +15,7 @@ export const createInitialState = (): GameState => ({
   projectiles: [],
   resources: [],
   selectedSeed: null,
+  hoveredCell: null,
   seedCooldowns: {},
   spawnedKeys: [],
 });

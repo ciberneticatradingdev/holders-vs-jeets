@@ -64,6 +64,7 @@ export interface Projectile {
   speed: number;
   damage: number;
   color: string;
+  holderType: HolderType;
 }
 
 export interface Resource {
@@ -91,6 +92,7 @@ export interface GameState {
   projectiles: Projectile[];
   resources: Resource[];
   selectedSeed: HolderType | null;
+  hoveredCell: { lane: number; col: number } | null;
   seedCooldowns: Partial<Record<HolderType, number>>;
   spawnedKeys: string[];
 }

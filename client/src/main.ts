@@ -110,7 +110,8 @@ function renderHUD(state = store.getState()): void {
       packet.classList.add('disabled');
     }
     packet.innerHTML = `
-      <div class="icon" style="background:${def.color}"></div>
+      <div class="icon" style="background:${def.color};--packet-color:${def.color}"></div>
+      <div class="name">${def.name}</div>
       <div class="cost">${def.cost}</div>
     `;
     const cd = state.seedCooldowns[type] ?? 0;
@@ -141,7 +142,7 @@ function gameLoop(now: number): void {
     store.setState(next);
   }
 
-  renderer.render(store.getState());
+  renderer.render(store.getState(), deltaMs);
   renderHUD();
   requestAnimationFrame(gameLoop);
 }
@@ -177,8 +178,12 @@ canvas.addEventListener('mousemove', (e) => {
   const state = store.getState();
   if (state.status !== 'playing') return;
   const pos = toLogical(e.clientX, e.clientY);
-  if (!pos) return;
-  // Could draw hover highlight here later
+  if (!pos) {
+    store.setState({ hoveredCell: null });
+    return;
+  }
+  const cell = cellAtPixel(pos.x, pos.y);
+  store.setState({ hoveredCell: cell });
 });
 
 // Overlay buttons
